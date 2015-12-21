@@ -1,0 +1,4 @@
+listener:
+ sparksamplelocal audit_events https://kinesis.us-east-1.amazonaws.com jdbc:postgresql://192.168.99.100:32771/mock_ps?user=postgres s3n://ytaras-etl-staging/
+aggregator:
+ s3n://ytaras-etl-staging/ jdbc:postgresql://192.168.99.100:32771/mock_ps?user=postgres s3n://ytaras-etl-results/

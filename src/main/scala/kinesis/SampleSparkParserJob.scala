@@ -14,8 +14,8 @@ import org.apache.spark.streaming.{Seconds, StreamingContext}
   */
 object SampleSparkParserJob extends App {
   Class.forName("org.postgresql.Driver")
-
-  val Array(appName, streamName, endpointUrl) = args
+//"jdbc:postgresql://192.168.99.100:32771/mock_ps?user=postgres"
+  val Array(appName, streamName, endpointUrl, dbUrl, output) = args
   val shardsNum = Util.kinesisShards(endpointUrl, streamName)
   val numStreams = shardsNum
   val regionName = Util.regionName(endpointUrl)
@@ -37,18 +37,17 @@ object SampleSparkParserJob extends App {
   }
 
   val metadata = sqlContext.read.format("jdbc")
-    .option("url", "jdbc:postgresql://192.168.99.100:32771/mock_ps").option("dbTable", "word")
-    .option("user", "postgres")
+    .option("url", dbUrl).option("dbTable", "word")
     .option("numPartitions", "2")
     .load.cache
 
   println(metadata.count())
 
-  val stream = ssc.socketTextStream("localhost", 9999).map { _.getBytes }
-//  val stream = ssc.union(kinesisStreams)k
+//  val stream = ssc.socketTextStream("localhost", 9999).map { _.getBytes }
+  val stream = ssc.union(kinesisStreams)
   parseAndEnrich(stream, metadata)
     .repartition(1)
-    .saveAsTextFiles("results/staging")
+    .saveAsTextFiles(output)
   ssc.start()
   ssc.awaitTermination()
 
