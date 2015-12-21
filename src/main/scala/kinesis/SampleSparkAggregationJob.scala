@@ -11,9 +11,9 @@ import org.apache.spark.{SparkContext, SparkConf}
 object SampleSparkAggregationJob extends App {
   val Array(input, db, out) = args
 
-  Class.forName("org.postgresql.Driver")
   val sparkConfig = new SparkConf().setAppName("Aggregation").setMaster("local[*]")
   val sc = new SparkContext(sparkConfig)
+  Util.loadDrivers(sc)
   val sqlContext = new SQLContext(sc)
 
   val staging = sqlContext.read.json(sc.textFile(input))

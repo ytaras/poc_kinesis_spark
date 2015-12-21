@@ -3,6 +3,8 @@ package kinesis
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.regions.RegionUtils
 import com.amazonaws.services.kinesis.AmazonKinesisClient
+import org.apache.hadoop.conf.Configuration
+import org.apache.spark.SparkContext
 
 /**
   * Created by ytaras on 12/18/15.
@@ -21,6 +23,12 @@ object Util {
     val kinesisClient = new AmazonKinesisClient(credentials)
     kinesisClient.setEndpoint(endpointUrl)
     kinesisClient.describeStream(streamName).getStreamDescription.getShards.size
+  }
+
+  def loadDrivers(sc: SparkContext): Unit = {
+    Class.forName("org.postgresql.Driver")
+    val hadoopConf: Configuration = sc.hadoopConfiguration
+    hadoopConf.set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
   }
 }
 
