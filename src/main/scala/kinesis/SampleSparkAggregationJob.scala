@@ -21,6 +21,7 @@ object SampleSparkAggregationJob extends App {
   val metadata = sqlContext.read.format("jdbc")
     .option("url", db).option("dbTable", "word")
     .option("numPartitions", "2")
+    .option("driver", "org.postgresql.Driver")
     .load.cache
 
 
@@ -29,6 +30,6 @@ object SampleSparkAggregationJob extends App {
   val enriched = aggregated.as('agg)
     .join(metadata.withColumnRenamed("word", "meta_word"), $"agg.word" === $"meta_word", "left_outer")
     .select("word", "count", "metadata")
-  enriched.show
   enriched.repartition(1).write.json(out)
+
 }

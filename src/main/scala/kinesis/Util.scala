@@ -14,7 +14,6 @@ object Util {
     RegionUtils.getRegionByEndpoint(endpointUrl).getName
   }
 
-
   def kinesisShards(endpointUrl: String, streamName: String): Int = {
     val credentials = new DefaultAWSCredentialsProviderChain().getCredentials
     require(credentials != null,
@@ -26,9 +25,16 @@ object Util {
   }
 
   def loadDrivers(sc: SparkContext): Unit = {
+    val credentials = new DefaultAWSCredentialsProviderChain().getCredentials
     Class.forName("org.postgresql.Driver")
     val hadoopConf: Configuration = sc.hadoopConfiguration
-    hadoopConf.set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
+    hadoopConf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+    hadoopConf.set("fs.s3a.access.key", credentials.getAWSAccessKeyId)
+    hadoopConf.set("fs.s3a.secret.key", credentials.getAWSSecretKey)
+    hadoopConf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+    hadoopConf.set("fs.s3a.access.key", credentials.getAWSAccessKeyId)
+    hadoopConf.set("fs.s3a.secret.key", credentials.getAWSSecretKey)
+    println(s"Using ${hadoopConf.get("fs.s3a.access.key")}:${hadoopConf.get("fs.s3a.secret.key")}")
   }
 }
 

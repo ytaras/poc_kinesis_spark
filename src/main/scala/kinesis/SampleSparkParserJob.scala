@@ -7,7 +7,7 @@ import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kinesis.KinesisUtils
-import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark.streaming.{Time, Seconds, StreamingContext}
 
 /**
   * Created by ytaras on 12/18/15.
@@ -20,13 +20,13 @@ object SampleSparkParserJob extends App {
   val numStreams = shardsNum
   val regionName = Util.regionName(endpointUrl)
 
-
   val batchInterval = Seconds(15)
   val kinesisCheckpointInterval = Seconds(15)
 
   // Setup the SparkConfig and StreamingContext
   val sparkConfig = new SparkConf().setAppName("KinesisWordCountASL").setMaster("local[*]")
   val sc = new SparkContext(sparkConfig)
+  Util.loadDrivers(sc)
   val sqlContext = new SQLContext(sc)
   val ssc = new StreamingContext(sc, batchInterval)
 
@@ -38,6 +38,7 @@ object SampleSparkParserJob extends App {
 
   val metadata = sqlContext.read.format("jdbc")
     .option("url", dbUrl).option("dbTable", "word")
+    .option("driver", "org.postgresql.Driver")
     .option("numPartitions", "2")
     .load.cache
 
@@ -47,7 +48,13 @@ object SampleSparkParserJob extends App {
   val stream = ssc.union(kinesisStreams)
   parseAndEnrich(stream, metadata)
     .repartition(1)
-    .saveAsTextFiles(output)
+    .foreachRDD { (rdd: RDD[String], time: Time) =>
+      if (!rdd.isEmpty) {
+        val fileName = s"$output/${time.milliseconds}/"
+        println(s"Saving to ${fileName}")
+        rdd.saveAsTextFile(fileName)
+      }
+    }
   ssc.start()
   ssc.awaitTermination()
 
